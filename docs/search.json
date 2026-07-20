@@ -79,9 +79,9 @@
   {
     "objectID": "Cleansing_Exploration/project1.html",
     "href": "Cleansing_Exploration/project1.html",
-    "title": "Client Report - [Insert Project Title]",
+    "title": "Semester Project F1",
     "section": "",
-    "text": "Paste in a template\n\n\n\n\n Back to top",
+    "text": "In Formula 1 racing, data collection and analysis is the most important thing to winning the race. The data gathered from each race gives teams insights on how to make their car go just a little bit faster. If they are successful and shave off even one second per lap, that team will win the race. There are so many variables in F1 racing to analyze but for this analysis I want to answer this one question: Who was the fastest driver in 2024?\n\nlibrary(tidyverse)\nlibrary(readr)\n\nf1_url &lt;- \"rohanrao/formula-1-world-championship-1950-2020\"\n\nf1f &lt;- tempfile()\nf1dir &lt;- tempdir()\n\nsystem(paste0(\"kaggle datasets download -d \", f1_url, \" -p \", f1dir, \" --unzip\"))\n\npit_stops &lt;- read_csv(paste0(f1dir, \"/pit_stops.csv\"))\ndrivers &lt;- read_csv(paste0(f1dir, \"/drivers.csv\"))\nraces &lt;- read_csv(paste0(f1dir, \"/races.csv\"))\nlap_times &lt;- read_csv(paste0(f1dir, \"/lap_times.csv\"))\ndriver_standings &lt;- read_csv(paste0(f1dir, \"/driver_standings.csv\"))\nresults &lt;- read_csv(paste0(f1dir, \"/results.csv\"))\nstats &lt;- read_csv(paste0(f1dir, \"/status.csv\"))",
     "crumbs": [
       "Data Exploration",
       "Project 1"
@@ -363,5 +363,49 @@
     "title": "Logan Cowley CV",
     "section": "Contact Info",
     "text": "Contact Info\n\nPhone: (916) 693-0758\nEmail: logcow123@gmail.com"
+  },
+  {
+    "objectID": "Cleansing_Exploration/project1.html#background",
+    "href": "Cleansing_Exploration/project1.html#background",
+    "title": "Semester Project F1",
+    "section": "",
+    "text": "In Formula 1 racing, data collection and analysis is the most important thing to winning the race. The data gathered from each race gives teams insights on how to make their car go just a little bit faster. If they are successful and shave off even one second per lap, that team will win the race. There are so many variables in F1 racing to analyze but for this analysis I want to answer this one question: Who was the fastest driver in 2024?\n\nlibrary(tidyverse)\nlibrary(readr)\n\nf1_url &lt;- \"rohanrao/formula-1-world-championship-1950-2020\"\n\nf1f &lt;- tempfile()\nf1dir &lt;- tempdir()\n\nsystem(paste0(\"kaggle datasets download -d \", f1_url, \" -p \", f1dir, \" --unzip\"))\n\npit_stops &lt;- read_csv(paste0(f1dir, \"/pit_stops.csv\"))\ndrivers &lt;- read_csv(paste0(f1dir, \"/drivers.csv\"))\nraces &lt;- read_csv(paste0(f1dir, \"/races.csv\"))\nlap_times &lt;- read_csv(paste0(f1dir, \"/lap_times.csv\"))\ndriver_standings &lt;- read_csv(paste0(f1dir, \"/driver_standings.csv\"))\nresults &lt;- read_csv(paste0(f1dir, \"/results.csv\"))\nstats &lt;- read_csv(paste0(f1dir, \"/status.csv\"))",
+    "crumbs": [
+      "Data Exploration",
+      "Project 1"
+    ]
+  },
+  {
+    "objectID": "Cleansing_Exploration/project1.html#data-wrangling",
+    "href": "Cleansing_Exploration/project1.html#data-wrangling",
+    "title": "Semester Project F1",
+    "section": "Data Wrangling",
+    "text": "Data Wrangling\n\nraces_2024 &lt;- races %&gt;% filter(year == 2024)\n\n# Who was fastest overall in 2024?\nlaps_2024 &lt;- lap_times %&gt;%\n  filter(raceId %in% races_2024$raceId) %&gt;% \n  inner_join(drivers, by=\"driverId\") %&gt;% \n  group_by(surname) %&gt;% \n  summarise(\n    mean_time_m = mean(milliseconds)\n  ) %&gt;% \n  mutate(\n    time_s = mean_time_m / 1000,\n    is_verstappen = case_when(\n      surname == \"Verstappen\" ~ TRUE,\n      .default = FALSE\n    )\n  )\n\n# Using Results\navglap_2024 &lt;- results %&gt;% \n  filter(raceId %in% races_2024$raceId, raceId!=1134) %&gt;% # There seems to be an issue with the milliseconds in race 1134 so I wont include it for now\n  inner_join(drivers, by=\"driverId\") %&gt;% \n  inner_join(races, by=\"raceId\") %&gt;% \n  filter(driverId %in% c(830, 844, 846)) %&gt;% \n  group_by(raceId) %&gt;% \n  mutate(\n    avg_laptime_sec = (as.numeric(milliseconds)/laps)/1000,\n    is_fastest = avg_laptime_sec == min(avg_laptime_sec, na.rm = TRUE)\n  ) %&gt;% \n  ungroup() %&gt;% \n  select(raceId, name, driverId, surname, milliseconds, avg_laptime_sec, laps, is_fastest) %&gt;% \n  replace_na(list(avg_laptime_sec = 0, is_fastest = FALSE))\n\n\n\n# Who had the quickest pit stops?\npits_2024 &lt;- pit_stops %&gt;%\n  filter(raceId %in% races_2024$raceId) %&gt;% \n  inner_join(drivers, by=\"driverId\") %&gt;% \n  group_by(surname) %&gt;% \n  summarise(\n    mean_time_m = mean(milliseconds),\n    median_time_m = median(milliseconds)\n  ) %&gt;% \n  mutate(\n    time_s_mean = mean_time_m / 1000,\n    time_s_median = median_time_m / 1000,\n    is_verstappen = case_when(\n      surname == \"Verstappen\" ~ TRUE,\n      .default = FALSE\n    )\n  )\n\n# Who got top 3 the most?\nstandings_2024_2 &lt;- results %&gt;% \n  filter(raceId %in% races_2024$raceId, position %in% c(1,2,3)) %&gt;% \n  inner_join(drivers, by=\"driverId\") %&gt;% \n  group_by(surname, position) %&gt;% \n  summarise(\n    total = n(),\n    total_points = sum(points)\n  )\n\n# Points for the whole Season\npoints_2024 &lt;- results %&gt;% \n  filter(raceId %in% races_2024$raceId) %&gt;% \n  inner_join(drivers, by=\"driverId\") %&gt;% \n  group_by(surname) %&gt;% \n  summarise(\n    total_points = sum(points)\n  ) %&gt;% \n  mutate(\n    is_verstappen = case_when(\n      surname == \"Verstappen\" ~ TRUE,\n      .default = FALSE\n      )\n  )\n\n# Status distribution by nationality\nstatus_distribution &lt;- results %&gt;% \n  filter(raceId %in% races_2024$raceId) %&gt;% \n  inner_join(drivers, by=\"driverId\") %&gt;% \n  inner_join(stats, by=\"statusId\") %&gt;% \n  group_by(surname, status) %&gt;% \n  summarise(\n    count = n(),\n    nationality = max(nationality)\n  ) %&gt;% \n  filter(status == \"Finished\") %&gt;% \n  mutate(\n    is_verstappen = case_when(\n      surname == \"Verstappen\" ~ TRUE,\n      .default = FALSE\n      )\n  )\n\nracetimes &lt;- results %&gt;% \n  filter(raceId %in% races_2024$raceId) %&gt;% \n  inner_join(drivers, by=\"driverId\") %&gt;% \n  filter(driverId == 830)",
+    "crumbs": [
+      "Data Exploration",
+      "Project 1"
+    ]
+  },
+  {
+    "objectID": "Cleansing_Exploration/project1.html#data-visualization",
+    "href": "Cleansing_Exploration/project1.html#data-visualization",
+    "title": "Semester Project F1",
+    "section": "Data Visualization",
+    "text": "Data Visualization\nTo start off this analysis I looked at what drivers were getting in the top 3 in the 2024 season:\n\nggplot(standings_2024_2, aes(x=surname, y=total, fill=factor(position))) +\n  geom_bar(stat=\"identity\", position = position_dodge(preserve = \"single\")) +\n  scale_fill_manual(values = c(\"gold\", \"#C0C0C0\", \"#CD7F32\")) +\n  scale_y_continuous(breaks = c(3, 6, 9,12)) +\n  theme_bw() +\n  theme(panel.grid.minor = element_blank() ) +\n  labs(\n    title = \"Number of Races Won by Driver for 2024 F1 Season\",\n    x = \"Driver\",\n    y = \"Total\",\n    fill = \"Position\"\n  )\n\n\n\n\n\n\n\n\nLooking at the top 3 finishes we see that there are some drivers who stand out. Drivers like Leclerc, Norris and especially Verstappen have a lot of top 3 finishes with Verstappen having the most first place finishes. The next confirms that Verstappen was the best driver this season.\n\nggplot(points_2024, aes(x=fct_reorder(factor(surname), total_points, .desc = TRUE), y=total_points, fill=is_verstappen)) +\n  geom_bar(stat = \"identity\") +\n  scale_fill_manual(values = c(\"gray\", \"#3d6fbf\")) +\n  theme_bw() +\n  theme(\n    axis.text.x = element_text(angle=45, hjust = 1, vjust = 1),\n    legend.position = \"none\"\n  ) +\n  labs(\n    title = \"Total Points earned in the f1 seasons\",\n    subtitle = \"Verstappen Highlighted\",\n    x=\"Driver\",\n    y=\"Points\"\n  )\n\n\n\n\n\n\n\n\nVerstappen scored the most points with Norris and Leclerc trailing behind. These 3 drivers are good at driving but even the best drivers don’t finish the race. Sometimes the car has issues or sometimes they get lapped by the fastest driver. The next graph attempts to see who is consitent at finishiong races:\n\nggplot(status_distribution, aes(x=fct_reorder(surname, count, .desc = TRUE), y=count, fill=is_verstappen)) +\n  geom_bar(stat=\"identity\") +\n  scale_fill_manual(values = c(\"gray\", \"#3d6fbf\")) +\n  theme_bw() +\n  theme(\n    axis.text.x = element_text(angle=45, hjust = 1, vjust = 1),\n    legend.position = \"none\"\n  ) +\n  labs(\n    title = \"Races Finished By Driver for 2024 F1 Season\",\n    x=\"Driver\",\n    y=\"Races\"\n  )\n\n\n\n\n\n\n\n\nHere I found that the Driver Piastri finished all 24 races in the 2024 f1 season. He’s the only driver to have done that but trailing behind we have Norris, Verstappen, and Leclerc. Piastri is also a good driver because he’s consistent however, he is just slower than the other 3.\n\nggplot(avglap_2024, aes(x = fct_reorder(name, raceId), y = avg_laptime_sec, fill = surname)) +\n  geom_col(position = position_dodge(width = 0.9)) +\n  geom_point(\n    aes(\n      y = avg_laptime_sec + 5,\n      group = surname,\n      color = surname, \n      alpha = ifelse(is_fastest, 1, 0) \n    ),\n    position = position_dodge(width = 0.9),\n    show.legend = FALSE\n  ) +\n  scale_alpha_identity() +\n  scale_fill_manual(values = c(\"#CD7F32\", \"#C0C0C0\", \"gold\")) +\n  scale_color_manual(values = c(\"#CD7F32\", \"#C0C0C0\", \"gold\")) +\n  theme_bw() +\n  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1)) +\n  labs(\n    title = \"Average Lap time per race in 2024 F1 Season\",\n    subtitle = \"Top 3 Drivers Shown\",\n    x = \"Race\",\n    y = \"Average Lap Time(sec)\",\n    fill = \"Driver\"\n  )\n\n\n\n\n\n\n\n\nThe last thing I wanted to see was average lap times per race for the top 3 performers. On top of each group of. drivers there is the color of the driver who had the fastest average amoung the group of 3. After comparing the 3 we see that Verstappen does better than for almost half the races and Norris and Leclerc are tied",
+    "crumbs": [
+      "Data Exploration",
+      "Project 1"
+    ]
+  },
+  {
+    "objectID": "Cleansing_Exploration/project1.html#conclusion",
+    "href": "Cleansing_Exploration/project1.html#conclusion",
+    "title": "Semester Project F1",
+    "section": "Conclusion",
+    "text": "Conclusion\nIn my analysis I tried to find the best f1 driver for the 2024 season. That driver’s name is Verstappen. He consistently outperformed all the other drivers and his speed is just faster. There were some other good drivers like Leclerc, Norris and Piastri, but they were just too slow to score over Verstappen.",
+    "crumbs": [
+      "Data Exploration",
+      "Project 1"
+    ]
   }
 ]
